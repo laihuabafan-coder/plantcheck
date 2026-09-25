@@ -1110,15 +1110,6 @@
             const canvas = document.getElementById('growthChartCanvas');
             if (!canvas) return;
 
-            // Tracking prevention fallback check for Chart.js
-            if (typeof Chart === 'undefined') {
-                const parent = canvas.parentElement;
-                if (parent) {
-                    parent.innerHTML = `<div class="flex items-center justify-center h-full text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl p-4 text-center">ブラウザのトラッキング防止機能により Chart.js の読み込みが制限されています。<br>記録データの登録・保存機能は正常にご利用いただけます。</div>`;
-                }
-                return;
-            }
-
             const targetLogs = logsData
                 .filter(l => !plantId || l.plantId === plantId)
                 .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1126,6 +1117,70 @@
             const labels = targetLogs.map(l => l.date);
             const heights = targetLogs.map(l => l.height || 0);
             const leaves = targetLogs.map(l => l.leaves || 0);
+
+            // Native HTML5 Canvas Fallback if Chart.js CDN is blocked by Tracking Prevention
+            if (typeof Chart === 'undefined') {
+                const ctx = canvas.getContext('2d');
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width || 600;
+                canvas.height = 320;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (targetLogs.length === 0) {
+                    ctx.fillStyle = "#94a3b8";
+                    ctx.font = "13px 'Noto Sans JP', sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText("データがありません。観察レコードを追加してください。", canvas.width / 2, canvas.height / 2);
+                    return;
+                }
+
+                const padding = 40;
+                const chartW = canvas.width - padding * 2;
+                const chartH = canvas.height - padding * 2;
+                const maxVal = Math.max(...heights, ...leaves, 10) * 1.2;
+
+                // Draw background grid lines
+                ctx.strokeStyle = "#f1f5f9";
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 4; i++) {
+                    const y = padding + (chartH / 4) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(canvas.width - padding, y);
+                    ctx.stroke();
+                }
+
+                // Plot Height line (Green)
+                if (heights.length > 0) {
+                    ctx.strokeStyle = "#16a34a";
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    heights.forEach((val, i) => {
+                        const x = padding + (chartW / Math.max(heights.length - 1, 1)) * i;
+                        const y = canvas.height - padding - (val / maxVal) * chartH;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    });
+                    ctx.stroke();
+
+                    // Points
+                    heights.forEach((val, i) => {
+                        const x = padding + (chartW / Math.max(heights.length - 1, 1)) * i;
+                        const y = canvas.height - padding - (val / maxVal) * chartH;
+                        ctx.fillStyle = "#16a34a";
+                        ctx.beginPath();
+                        ctx.arc(x, y, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+
+                // Legend
+                ctx.fillStyle = "#16a34a";
+                ctx.font = "12px sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillText("● 草丈(cm) [ネイティブ描画モード]", padding, 20);
+                return;
+            }
 
             if (growthChartInstance) {
                 growthChartInstance.destroy();
@@ -1321,9 +1376,31 @@
                 showToast('作物を削除しました');
             } catch (err) {
                 console.error("Error deleting plant:", err);
+                switchToLocalMode("Delete plant error");
                 plantsData = plantsData.filter(p => p.id !== plantId);
                 saveLocalData();
                 updateUIAll();
+                showToast('ローカルから作物を削除しました');
+            }
+        };
+
+        window.deleteLog = async function(logId) {
+            try {
+                if (!isLocalMode && db) {
+                    await deleteDoc(doc(db, 'logs', logId));
+                } else {
+                    logsData = logsData.filter(l => l.id !== logId);
+                    saveLocalData();
+                    updateUIAll();
+                }
+                showToast('記録を削除しました');
+            } catch (err) {
+                console.error("Error deleting log:", err);
+                switchToLocalMode("Delete log error");
+                logsData = logsData.filter(l => l.id !== logId);
+                saveLocalData();
+                updateUIAll();
+                showToast('ローカルから記録を削除しました');
             }
         };
 
