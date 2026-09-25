@@ -561,6 +561,8 @@
             ? JSON.parse(__firebase_config)
             : defaultFirebaseConfig;
 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'plantcheck-52bbd';
+
         let app, auth, db;
         let currentUser = null;
         let isLocalMode = false;
@@ -1102,9 +1104,20 @@
         }
 
         window.updateGrowthChart = function() {
-            const plantId = document.getElementById('analyticsPlantSelect').value;
+            const plantIdSelect = document.getElementById('analyticsPlantSelect');
+            if (!plantIdSelect) return;
+            const plantId = plantIdSelect.value;
             const canvas = document.getElementById('growthChartCanvas');
             if (!canvas) return;
+
+            // Tracking prevention fallback check for Chart.js
+            if (typeof Chart === 'undefined') {
+                const parent = canvas.parentElement;
+                if (parent) {
+                    parent.innerHTML = `<div class="flex items-center justify-center h-full text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl p-4 text-center">ブラウザのトラッキング防止機能により Chart.js の読み込みが制限されています。<br>記録データの登録・保存機能は正常にご利用いただけます。</div>`;
+                }
+                return;
+            }
 
             const targetLogs = logsData
                 .filter(l => !plantId || l.plantId === plantId)
@@ -1329,114 +1342,6 @@
                 logsData = logsData.filter(l => l.id !== logId);
                 saveLocalData();
                 updateUIAll();
-            }
-        };
-
-        window.handleSaveLog = async function(e) {
-            e.preventDefault();
-            const plantId = document.getElementById('inputLogPlantId').value;
-            const stageVal = document.getElementById('inputLogStage').value;
-
-            const newLog = {
-                plantId: plantId,
-                date: document.getElementById('inputLogDate').value,
-                weather: document.getElementById('inputLogWeather').value,
-                temp: parseFloat(document.getElementById('inputLogTemp').value) || null,
-                height: parseFloat(document.getElementById('inputLogHeight').value) || null,
-                leaves: parseInt(document.getElementById('inputLogLeaves').value) || null,
-                tasks: {
-                    water: document.getElementById('chkWater').checked,
-                    fertilizer: document.getElementById('chkFertilizer').checked,
-                    prune: document.getElementById('chkPrune').checked,
-                    pest: document.getElementById('chkPest').checked
-                },
-                notes: document.getElementById('inputLogNotes').value,
-                createdAt: new Date().toISOString()
-            };
-
-            try {
-                if (db && currentUser) {
-                    await addDoc(getLogsCollectionPath(), newLog);
-                    if (stageVal) {
-                        const plantRef = doc(db, 'artifacts', appId, 'public', 'data', 'plants', plantId);
-                        await updateDoc(plantRef, { stage: stageVal });
-                    }
-                    if (document.getElementById('chkWater').checked) {
-                        const plantRef = doc(db, 'artifacts', appId, 'public', 'data', 'plants', plantId);
-                        await updateDoc(plantRef, { lastWatered: newLog.date });
-                    }
-                } else {
-                    newLog.id = 'l_' + Date.now();
-                    logsData.unshift(newLog);
-                    if (stageVal) {
-                        const targetPlant = plantsData.find(p => p.id === plantId);
-                        if (targetPlant) targetPlant.stage = stageVal;
-                    }
-                    if (document.getElementById('chkWater').checked) {
-                        const targetPlant = plantsData.find(p => p.id === plantId);
-                        if (targetPlant) targetPlant.lastWatered = newLog.date;
-                    }
-                    updateUIAll();
-                }
-                showToast('生育記録を追記しました！');
-                closeModal('addLogModal');
-                document.getElementById('logForm').reset();
-            } catch (err) {
-                console.error("Error adding log:", err);
-                showToast('保存に失敗しました', 'error');
-            }
-        };
-
-        window.toggleWaterTask = async function(plantId, event) {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const plant = plantsData.find(p => p.id === plantId);
-            if (!plant) return;
-
-            const newDate = plant.lastWatered === todayStr ? '' : todayStr;
-
-            if (event && event.currentTarget && newDate) {
-                triggerWaterEffect(event.currentTarget);
-            }
-
-            try {
-                if (db && currentUser) {
-                    const plantRef = doc(db, 'artifacts', appId, 'public', 'data', 'plants', plantId);
-                    await updateDoc(plantRef, { lastWatered: newDate });
-                } else {
-                    plant.lastWatered = newDate;
-                    updateUIAll();
-                }
-                showToast(newDate ? '💧 水やりを記録しました！' : '水やり記録を取り消しました');
-            } catch (err) {
-                console.error("Error updating water task:", err);
-            }
-        };
-
-        window.deletePlant = async function(plantId) {
-            try {
-                if (db && currentUser) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'plants', plantId));
-                } else {
-                    plantsData = plantsData.filter(p => p.id !== plantId);
-                    updateUIAll();
-                }
-                showToast('作物を削除しました');
-            } catch (err) {
-                console.error("Error deleting plant:", err);
-            }
-        };
-
-        window.deleteLog = async function(logId) {
-            try {
-                if (db && currentUser) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'logs', logId));
-                } else {
-                    logsData = logsData.filter(l => l.id !== logId);
-                    updateUIAll();
-                }
-                showToast('記録を削除しました');
-            } catch (err) {
-                console.error("Error deleting log:", err);
             }
         };
 
