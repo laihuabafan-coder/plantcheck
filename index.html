@@ -36,7 +36,56 @@
         body {
             font-family: 'Noto Sans JP', 'Inter', sans-serif;
             background-color: #f8fafc;
+            overflow-x: hidden;
         }
+        /* Custom Animations & Dynamic Motion Styles */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.88); opacity: 0; }
+            70% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(3deg); }
+        }
+        @keyframes splash {
+            0% { transform: scale(0.5); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes waterRipple {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-pop-in {
+            animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .animate-float {
+            animation: float 3.5s ease-in-out infinite;
+        }
+        .animate-splash {
+            animation: splash 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 16px 28px -10px rgba(22, 197, 94, 0.18), 0 6px 12px -4px rgba(0, 0, 0, 0.05);
+        }
+
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -56,17 +105,17 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
 
     <!-- Top Navigation Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <!-- Logo & Brand -->
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-md shadow-brand-500/20">
-                        <i class="fa-solid font-bold fa-seedling text-xl"></i>
+                <div class="flex items-center space-x-3 group cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:scale-105 group-hover:rotate-6 transition-all duration-300">
+                        <i class="fa-solid font-bold fa-seedling text-xl animate-float"></i>
                     </div>
                     <div>
                         <div class="flex items-center space-x-2">
-                            <span class="text-xl font-bold tracking-tight text-slate-900">plantcheck</span>
+                            <span class="text-xl font-bold tracking-tight text-slate-900 group-hover:text-brand-600 transition-colors">plantcheck</span>
                             <span class="bg-brand-100 text-brand-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-brand-200">v1.0</span>
                         </div>
                         <p class="text-xs text-slate-500 hidden sm:block">作物の生育記録 & 管理システム</p>
@@ -75,7 +124,7 @@
 
                 <!-- Sync Badge & Quick Action -->
                 <div class="flex items-center space-x-3">
-                    <div id="syncStatusBadge" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 transition-all">
+                    <div id="syncStatusBadge" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 transition-all cursor-pointer" onclick="showFirebaseRulesHelp()">
                         <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse" id="statusDot"></span>
                         <span id="statusText" class="font-medium">接続中...</span>
                     </div>
@@ -88,6 +137,19 @@
             </div>
         </div>
     </header>
+
+    <!-- Firestore Rules Notification Bar (Hidden by default, shown on permission error) -->
+    <div id="firebaseRuleAlert" class="bg-amber-50 border-b border-amber-200 py-2.5 px-4 hidden transition-all">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-amber-900 gap-2">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-sm"></i>
+                <span><strong>Firestoreアクセス権限未設定:</strong> ローカル保存モードで動作中。Firebase Consoleでルールを設定するとオンライン同期できます。</span>
+            </div>
+            <button onclick="alertFirebaseRulesGuide()" class="underline text-amber-900 font-semibold hover:text-amber-700 whitespace-nowrap bg-amber-100 px-3 py-1 rounded-md">
+                ルールの設定手順を見る
+            </button>
+        </div>
+    </div>
 
     <!-- Main Content Container -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
@@ -116,49 +178,49 @@
         </div>
 
         <!-- TAB CONTENT 1: DASHBOARD -->
-        <section id="content-dashboard" class="tab-content space-y-6">
+        <section id="content-dashboard" class="tab-content space-y-6 animate-fade-in">
             <!-- Summary Stats Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between card-hover">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">管理中の作物</p>
                         <h3 class="text-3xl font-extrabold text-slate-800 mt-1" id="dashTotalPlants">0</h3>
                         <p class="text-xs text-brand-600 font-medium mt-1"><i class="fa-solid fa-check-circle mr-1"></i>アクティブ栽培中</p>
                     </div>
-                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-sprout"></i>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-sprout animate-float"></i>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between card-hover">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">累計記録数</p>
                         <h3 class="text-3xl font-extrabold text-slate-800 mt-1" id="dashTotalLogs">0</h3>
                         <p class="text-xs text-blue-600 font-medium mt-1"><i class="fa-solid fa-clock-rotate-left mr-1"></i>定期観測データ</p>
                     </div>
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
                         <i class="fa-solid fa-clipboard-list"></i>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between card-hover">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">本日の作業タスク</p>
                         <h3 class="text-3xl font-extrabold text-slate-800 mt-1" id="dashPendingTasks">0</h3>
                         <p class="text-xs text-amber-600 font-medium mt-1"><i class="fa-solid fa-droplet mr-1"></i>水やり・施肥推奨</p>
                     </div>
-                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
                         <i class="fa-solid fa-hand-holding-droplet"></i>
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between card-hover">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">収穫期・結実期</p>
                         <h3 class="text-3xl font-extrabold text-slate-800 mt-1" id="dashHarvestCount">0</h3>
                         <p class="text-xs text-purple-600 font-medium mt-1"><i class="fa-solid fa-basket-shopping mr-1"></i>収穫間近の作物</p>
                     </div>
-                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
                         <i class="fa-solid fa-apple-whole"></i>
                     </div>
                 </div>
@@ -308,8 +370,8 @@
     </footer>
 
     <!-- MODAL 1: ADD / EDIT CROP -->
-    <div id="addPlantModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div id="addPlantModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar animate-pop-in">
             <button onclick="closeModal('addPlantModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -380,8 +442,8 @@
     </div>
 
     <!-- MODAL 2: ADD GROWTH LOG -->
-    <div id="addLogModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div id="addLogModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar animate-pop-in">
             <button onclick="closeModal('addLogModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -481,8 +543,8 @@
     <!-- Firebase standard web SDK script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Configuration provided in context / prompt
         const defaultFirebaseConfig = {
@@ -499,13 +561,69 @@
             ? JSON.parse(__firebase_config)
             : defaultFirebaseConfig;
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'plantcheck-52bbd';
-
         let app, auth, db;
         let currentUser = null;
+        let isLocalMode = false;
         let plantsData = [];
         let logsData = [];
         let growthChartInstance = null;
+
+        // Smooth Counter Animation Helper
+        function animateCounter(elementId, targetValue) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const startValue = parseInt(el.textContent) || 0;
+            if (startValue === targetValue) return;
+
+            const duration = 800; // ms
+            const startTime = performance.now();
+
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+                el.textContent = currentValue;
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = targetValue;
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        // Water drop splash visual effect function
+        function triggerWaterEffect(targetBtn) {
+            if (!targetBtn) return;
+            targetBtn.classList.add('animate-splash');
+            
+            // Create temporary animated floating drops
+            const rect = targetBtn.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+                const particle = document.createElement('div');
+                particle.innerHTML = '💧';
+                particle.className = 'fixed pointer-events-none z-50 text-sm transition-all duration-700 ease-out';
+                particle.style.left = `${rect.left + rect.width / 2}px`;
+                particle.style.top = `${rect.top}px`;
+                document.body.appendChild(particle);
+
+                const angle = (Math.PI / 4) * (i - 2);
+                const distance = 40 + Math.random() * 30;
+                const x = Math.sin(angle) * distance;
+                const y = -Math.cos(angle) * distance - 20;
+
+                setTimeout(() => {
+                    particle.style.transform = `translate(${x}px, ${y}px) scale(0)`;
+                    particle.style.opacity = '0';
+                }, 10);
+
+                setTimeout(() => particle.remove(), 750);
+            }
+
+            setTimeout(() => {
+                targetBtn.classList.remove('animate-splash');
+            }, 400);
+        }
 
         async function initFirebase() {
             try {
@@ -513,70 +631,144 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Authentication setup
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
+                try {
                     await signInAnonymously(auth);
+                } catch (authErr) {
+                    console.warn("Anonymous auth skipped or restricted:", authErr);
                 }
 
                 onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        currentUser = user;
-                        updateSyncBadge('online', 'Firebase 同期中');
-                        subscribeFirestoreData();
-                    } else {
-                        updateSyncBadge('offline', 'ローカルモード');
-                        loadSampleDataIfEmpty();
-                    }
+                    currentUser = user;
+                    subscribeFirestoreData();
                 });
+
+                // Fallback timeout in case auth state takes long
+                setTimeout(() => {
+                    if (!isLocalMode && plantsData.length === 0) {
+                        subscribeFirestoreData();
+                    }
+                }, 1200);
+
             } catch (err) {
                 console.warn("Firebase Init fallback to local state:", err);
-                updateSyncBadge('offline', 'ローカル保存モード');
-                loadSampleDataIfEmpty();
+                switchToLocalMode("Firebase初期化エラー");
             }
         }
 
         function getPlantsCollectionPath() {
-            return collection(db, 'artifacts', appId, 'public', 'data', 'plants');
+            return collection(db, 'plants');
         }
 
         function getLogsCollectionPath() {
-            return collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+            return collection(db, 'logs');
         }
 
         function subscribeFirestoreData() {
-            if (!db || !currentUser) return;
+            if (!db || isLocalMode) return;
+
+            let plantsLoaded = false;
+            let logsLoaded = false;
 
             // Listen to Plants Collection
-            onSnapshot(getPlantsCollectionPath(), (snapshot) => {
-                plantsData = [];
-                snapshot.forEach((doc) => {
-                    plantsData.push({ id: doc.id, ...doc.data() });
+            try {
+                onSnapshot(getPlantsCollectionPath(), (snapshot) => {
+                    if (isLocalMode) return;
+                    plantsData = [];
+                    snapshot.forEach((doc) => {
+                        plantsData.push({ id: doc.id, ...doc.data() });
+                    });
+                    plantsLoaded = true;
+                    updateSyncBadge('online', 'Firebase リアルタイム同期中');
+                    document.getElementById('firebaseRuleAlert').classList.add('hidden');
+                    if (plantsData.length === 0 && logsLoaded) {
+                        seedInitialDataToFirestore();
+                    } else {
+                        updateUIAll();
+                    }
+                }, (error) => {
+                    console.warn("Plants snapshot permission error, falling back to local mode:", error);
+                    switchToLocalMode("Missing or insufficient permissions");
                 });
-                if (plantsData.length === 0) {
-                    seedInitialDataToFirestore();
-                } else {
-                    updateUIAll();
-                }
-            }, (error) => {
-                console.error("Plants snapshot error:", error);
-                loadSampleDataIfEmpty();
-            });
 
-            // Listen to Growth Logs Collection
-            onSnapshot(getLogsCollectionPath(), (snapshot) => {
-                logsData = [];
-                snapshot.forEach((doc) => {
-                    logsData.push({ id: doc.id, ...doc.data() });
+                // Listen to Growth Logs Collection
+                onSnapshot(getLogsCollectionPath(), (snapshot) => {
+                    if (isLocalMode) return;
+                    logsData = [];
+                    snapshot.forEach((doc) => {
+                        logsData.push({ id: doc.id, ...doc.data() });
+                    });
+                    logsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    logsLoaded = true;
+                    updateUIAll();
+                }, (error) => {
+                    console.warn("Logs snapshot permission error:", error);
+                    switchToLocalMode("Missing or insufficient permissions");
                 });
-                // Sort by date desc
-                logsData.sort((a, b) => new Date(b.date) - new Date(a.date));
-                updateUIAll();
-            }, (error) => {
-                console.error("Logs snapshot error:", error);
-            });
+            } catch (e) {
+                switchToLocalMode("Firestore Connection Error");
+            }
         }
+
+        function switchToLocalMode(reason) {
+            if (isLocalMode) return;
+            isLocalMode = true;
+            
+            updateSyncBadge('offline', 'ローカル保存モード');
+            document.getElementById('firebaseRuleAlert').classList.remove('hidden');
+
+            loadLocalData();
+        }
+
+        function loadLocalData() {
+            const savedPlants = localStorage.getItem('plantcheck_plants');
+            const savedLogs = localStorage.getItem('plantcheck_logs');
+
+            if (savedPlants && savedLogs) {
+                try {
+                    plantsData = JSON.parse(savedPlants);
+                    logsData = JSON.parse(savedLogs);
+                } catch (e) {
+                    loadSampleDataIfEmpty();
+                    return;
+                }
+                updateUIAll();
+            } else {
+                loadSampleDataIfEmpty();
+            }
+        }
+
+        function saveLocalData() {
+            if (!isLocalMode) return;
+            localStorage.setItem('plantcheck_plants', JSON.stringify(plantsData));
+            localStorage.setItem('plantcheck_logs', JSON.stringify(logsData));
+        }
+
+        window.alertFirebaseRulesGuide = function() {
+            alert(
+                "【Firestoreセキュリティルールの設定方法】\n\n" +
+                "1. Firebase Console (console.firebase.google.com) を開きます\n" +
+                "2. プロジェクト 'plantcheck-52bbd' を選択\n" +
+                "3. 左メニュー [Firestore Database] ➔ [ルール] タブを選択\n" +
+                "4. ルールを以下のように書き換えて [公開] ボタンをクリックしてください：\n\n" +
+                "rules_version = '2';\n" +
+                "service cloud.firestore {\n" +
+                "  match /databases/{database}/documents {\n" +
+                "    match /{document=**} {\n" +
+                "      allow read, write: if true;\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n\n" +
+                "※ 公開後、ページを再読み込みするとオンライン同期が再開されます。"
+            );
+        };
+
+        window.showFirebaseRulesHelp = function() {
+            if (isLocalMode) {
+                alertFirebaseRulesGuide();
+            } else {
+                showToast("Firebase Firestoreと正常に同期されています");
+            }
+        };
 
         async function seedInitialDataToFirestore() {
             const initialPlants = [
@@ -615,20 +807,24 @@
                 }
             ];
 
-            for (const plant of initialPlants) {
-                const docRef = await addDoc(getPlantsCollectionPath(), plant);
-                
-                // Add initial logs for graph demonstration
-                const sampleLogs = [
-                    { plantId: docRef.id, date: "2026-03-05", height: 12.0, leaves: 4, temp: 18.5, weather: "晴れ", tasks: { water: true }, notes: "定植後の根付き確認。" },
-                    { plantId: docRef.id, date: "2026-03-12", height: 22.5, leaves: 7, temp: 21.0, weather: "晴れ", tasks: { water: true, fertilizer: true }, notes: "第1花房が伸び始める。" },
-                    { plantId: docRef.id, date: "2026-03-19", height: 38.0, leaves: 11, temp: 22.5, weather: "くもり", tasks: { water: true, prune: true }, notes: "わき芽かきを実施。" },
-                    { plantId: docRef.id, date: "2026-03-25", height: 52.0, leaves: 15, temp: 24.0, weather: "晴れ", tasks: { water: true }, notes: "果実がゴルフボール大に成長。" }
-                ];
+            try {
+                for (const plant of initialPlants) {
+                    const docRef = await addDoc(getPlantsCollectionPath(), plant);
+                    
+                    const sampleLogs = [
+                        { plantId: docRef.id, date: "2026-03-05", height: 12.0, leaves: 4, temp: 18.5, weather: "晴れ", tasks: { water: true }, notes: "定植後の根付き確認。" },
+                        { plantId: docRef.id, date: "2026-03-12", height: 22.5, leaves: 7, temp: 21.0, weather: "晴れ", tasks: { water: true, fertilizer: true }, notes: "第1花房が伸び始める。" },
+                        { plantId: docRef.id, date: "2026-03-19", height: 38.0, leaves: 11, temp: 22.5, weather: "くもり", tasks: { water: true, prune: true }, notes: "わき芽かきを実施。" },
+                        { plantId: docRef.id, date: "2026-03-25", height: 52.0, leaves: 15, temp: 24.0, weather: "晴れ", tasks: { water: true }, notes: "果実がゴルフボール大に成長。" }
+                    ];
 
-                for (const log of sampleLogs) {
-                    await addDoc(getLogsCollectionPath(), log);
+                    for (const log of sampleLogs) {
+                        await addDoc(getLogsCollectionPath(), log);
+                    }
                 }
+            } catch (err) {
+                console.warn("Seeding failed, switching to local storage mode:", err);
+                switchToLocalMode("Seeding failed");
             }
         }
 
@@ -643,6 +839,7 @@
                     { id: 'l2', plantId: 'p1', date: "2026-03-15", height: 30.0, leaves: 9, temp: 21.0, weather: "晴れ", tasks: { water: true }, notes: "順調" },
                     { id: 'l3', plantId: 'p1', date: "2026-03-25", height: 52.0, leaves: 15, temp: 24.0, weather: "晴れ", tasks: { water: true }, notes: "開花確認" }
                 ];
+                saveLocalData();
                 updateUIAll();
             }
         }
@@ -669,18 +866,18 @@
         }
 
         function renderDashboard() {
-            document.getElementById('dashTotalPlants').textContent = plantsData.length;
-            document.getElementById('dashTotalLogs').textContent = logsData.length;
+            animateCounter('dashTotalPlants', plantsData.length);
+            animateCounter('dashTotalLogs', logsData.length);
             document.getElementById('cropCountBadge').textContent = plantsData.length;
 
             const harvestPlants = plantsData.filter(p => p.stage === '収穫期' || p.stage === '結実・肥大期');
-            document.getElementById('dashHarvestCount').textContent = harvestPlants.length;
+            animateCounter('dashHarvestCount', harvestPlants.length);
 
             const todayStr = new Date().toISOString().split('T')[0];
             const needsWaterCount = plantsData.filter(p => p.lastWatered !== todayStr).length;
-            document.getElementById('dashPendingTasks').textContent = needsWaterCount;
+            animateCounter('dashPendingTasks', needsWaterCount);
 
-            // Render stage progress
+            // Render stage progress with animated width transition
             const stages = ['発芽・育苗期', '栄養成長期', '開花期', '結実・肥大期', '収穫期'];
             const stageCounts = {};
             stages.forEach(s => stageCounts[s] = 0);
@@ -693,13 +890,13 @@
                 const count = stageCounts[stg];
                 const pct = plantsData.length ? Math.round((count / plantsData.length) * 100) : 0;
                 return `
-                    <div>
+                    <div class="transition-all hover:scale-[1.01]">
                         <div class="flex justify-between text-xs mb-1">
                             <span class="font-medium text-slate-700">${stg}</span>
                             <span class="font-bold text-slate-900">${count}件 (${pct}%)</span>
                         </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2">
-                            <div class="bg-brand-500 h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+                            <div class="bg-brand-500 h-2 rounded-full transition-all duration-700 ease-out" style="width: ${pct}%"></div>
                         </div>
                     </div>
                 `;
@@ -713,12 +910,12 @@
                 return;
             }
 
-            dashLogsContainer.innerHTML = recentLogs.map(log => {
+            dashLogsContainer.innerHTML = recentLogs.map((log, index) => {
                 const plant = plantsData.find(p => p.id === log.plantId) || { name: '不明な作物', emoji: '🌱' };
                 return `
-                    <div class="p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl flex items-center justify-between hover:bg-slate-100/80 transition-all">
+                    <div class="p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl flex items-center justify-between hover:bg-slate-100/90 transition-all card-hover" style="animation-delay: ${index * 80}ms">
                         <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-lg shadow-sm">
+                            <div class="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform">
                                 ${plant.emoji || '🌱'}
                             </div>
                             <div>
@@ -727,7 +924,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">${log.weather || '晴れ'}</span>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">${log.weather || '晴れ'}</span>
                         </div>
                     </div>
                 `;
@@ -743,8 +940,8 @@
 
             if (filtered.length === 0) {
                 grid.innerHTML = `
-                    <div class="col-span-full bg-white p-12 rounded-2xl border border-dashed border-slate-300 text-center">
-                        <i class="fa-solid fa-leaf text-4xl text-slate-300 mb-3"></i>
+                    <div class="col-span-full bg-white p-12 rounded-2xl border border-dashed border-slate-300 text-center animate-fade-in">
+                        <i class="fa-solid fa-leaf text-4xl text-slate-300 mb-3 animate-float"></i>
                         <p class="text-sm font-semibold text-slate-600">作物が登録されていません</p>
                         <p class="text-xs text-slate-400 mt-1">右上ボタンより新しい作物を追加してください。</p>
                     </div>
@@ -752,17 +949,17 @@
                 return;
             }
 
-            grid.innerHTML = filtered.map(plant => {
+            grid.innerHTML = filtered.map((plant, index) => {
                 const daysPlanted = Math.floor((new Date() - new Date(plant.plantingDate)) / (1000 * 60 * 60 * 24));
                 const plantLogs = logsData.filter(l => l.plantId === plant.id);
                 const latestLog = plantLogs[0];
 
                 return `
-                    <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                    <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between card-hover animate-fade-in" style="animation-delay: ${index * 60}ms">
                         <div>
                             <div class="flex justify-between items-start mb-3">
                                 <div class="flex items-center space-x-3">
-                                    <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-2xl shadow-inner">
+                                    <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-2xl shadow-inner transform hover:scale-110 hover:rotate-6 transition-all duration-300">
                                         ${plant.emoji || '🌱'}
                                     </div>
                                     <div>
@@ -770,12 +967,12 @@
                                         <span class="text-[11px] font-medium text-slate-500"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${plant.location || '設定なし'}</span>
                                     </div>
                                 </div>
-                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-100 text-brand-800 border border-brand-200">
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-100 text-brand-800 border border-brand-200 shadow-sm">
                                     ${plant.stage}
                                 </span>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 my-4 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div class="grid grid-cols-2 gap-2 my-4 text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-100">
                                 <div>
                                     <span class="text-slate-400 block text-[10px]">定植からの日数</span>
                                     <span class="font-bold text-slate-800 text-sm">${daysPlanted >= 0 ? daysPlanted : 0} 日目</span>
@@ -790,11 +987,11 @@
                         </div>
 
                         <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-                            <button onclick="quickAddLogFor('${plant.id}')" class="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center space-x-1">
+                            <button onclick="quickAddLogFor('${plant.id}')" class="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:scale-105 transition-all flex items-center space-x-1">
                                 <i class="fa-solid fa-square-plus"></i>
                                 <span>観察記録を追加</span>
                             </button>
-                            <button onclick="deletePlant('${plant.id}')" class="text-xs text-slate-400 hover:text-rose-600 transition-colors">
+                            <button onclick="deletePlant('${plant.id}')" class="text-xs text-slate-400 hover:text-rose-600 hover:scale-110 transition-all">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
@@ -985,19 +1182,153 @@
             };
 
             try {
-                if (db && currentUser) {
+                if (!isLocalMode && db) {
                     await addDoc(getPlantsCollectionPath(), newPlant);
                 } else {
                     newPlant.id = 'p_' + Date.now();
                     plantsData.push(newPlant);
+                    saveLocalData();
                     updateUIAll();
                 }
                 showToast('作物を登録しました！');
                 closeModal('addPlantModal');
                 document.getElementById('plantForm').reset();
             } catch (err) {
-                console.error("Error adding plant:", err);
-                showToast('保存に失敗しました', 'error');
+                console.error("Error adding plant, saving locally:", err);
+                newPlant.id = 'p_' + Date.now();
+                plantsData.push(newPlant);
+                switchToLocalMode("Save plant permission error");
+                saveLocalData();
+                updateUIAll();
+                showToast('ローカルに保存しました（権限未設定）');
+                closeModal('addPlantModal');
+            }
+        };
+
+        window.handleSaveLog = async function(e) {
+            e.preventDefault();
+            const plantId = document.getElementById('inputLogPlantId').value;
+            const stageVal = document.getElementById('inputLogStage').value;
+
+            const newLog = {
+                plantId: plantId,
+                date: document.getElementById('inputLogDate').value,
+                weather: document.getElementById('inputLogWeather').value,
+                temp: parseFloat(document.getElementById('inputLogTemp').value) || null,
+                height: parseFloat(document.getElementById('inputLogHeight').value) || null,
+                leaves: parseInt(document.getElementById('inputLogLeaves').value) || null,
+                tasks: {
+                    water: document.getElementById('chkWater').checked,
+                    fertilizer: document.getElementById('chkFertilizer').checked,
+                    prune: document.getElementById('chkPrune').checked,
+                    pest: document.getElementById('chkPest').checked
+                },
+                notes: document.getElementById('inputLogNotes').value,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                if (!isLocalMode && db) {
+                    await addDoc(getLogsCollectionPath(), newLog);
+                    if (stageVal) {
+                        const plantRef = doc(db, 'plants', plantId);
+                        await updateDoc(plantRef, { stage: stageVal });
+                    }
+                    if (document.getElementById('chkWater').checked) {
+                        const plantRef = doc(db, 'plants', plantId);
+                        await updateDoc(plantRef, { lastWatered: newLog.date });
+                    }
+                } else {
+                    newLog.id = 'l_' + Date.now();
+                    logsData.unshift(newLog);
+                    if (stageVal) {
+                        const targetPlant = plantsData.find(p => p.id === plantId);
+                        if (targetPlant) targetPlant.stage = stageVal;
+                    }
+                    if (document.getElementById('chkWater').checked) {
+                        const targetPlant = plantsData.find(p => p.id === plantId);
+                        if (targetPlant) targetPlant.lastWatered = newLog.date;
+                    }
+                    saveLocalData();
+                    updateUIAll();
+                }
+                showToast('生育記録を追記しました！');
+                closeModal('addLogModal');
+                document.getElementById('logForm').reset();
+            } catch (err) {
+                console.error("Error adding log, saving locally:", err);
+                newLog.id = 'l_' + Date.now();
+                logsData.unshift(newLog);
+                switchToLocalMode("Save log permission error");
+                saveLocalData();
+                updateUIAll();
+                showToast('ローカルに保存しました');
+                closeModal('addLogModal');
+            }
+        };
+
+        window.toggleWaterTask = async function(plantId, event) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const plant = plantsData.find(p => p.id === plantId);
+            if (!plant) return;
+
+            const newDate = plant.lastWatered === todayStr ? '' : todayStr;
+
+            if (event && event.currentTarget && newDate) {
+                triggerWaterEffect(event.currentTarget);
+            }
+
+            try {
+                if (!isLocalMode && db) {
+                    const plantRef = doc(db, 'plants', plantId);
+                    await updateDoc(plantRef, { lastWatered: newDate });
+                } else {
+                    plant.lastWatered = newDate;
+                    saveLocalData();
+                    updateUIAll();
+                }
+                showToast(newDate ? '💧 水やりを記録しました！' : '水やり記録を取り消しました');
+            } catch (err) {
+                console.error("Error updating water task:", err);
+                plant.lastWatered = newDate;
+                saveLocalData();
+                updateUIAll();
+            }
+        };
+
+        window.deletePlant = async function(plantId) {
+            try {
+                if (!isLocalMode && db) {
+                    await deleteDoc(doc(db, 'plants', plantId));
+                } else {
+                    plantsData = plantsData.filter(p => p.id !== plantId);
+                    saveLocalData();
+                    updateUIAll();
+                }
+                showToast('作物を削除しました');
+            } catch (err) {
+                console.error("Error deleting plant:", err);
+                plantsData = plantsData.filter(p => p.id !== plantId);
+                saveLocalData();
+                updateUIAll();
+            }
+        };
+
+        window.deleteLog = async function(logId) {
+            try {
+                if (!isLocalMode && db) {
+                    await deleteDoc(doc(db, 'logs', logId));
+                } else {
+                    logsData = logsData.filter(l => l.id !== logId);
+                    saveLocalData();
+                    updateUIAll();
+                }
+                showToast('記録を削除しました');
+            } catch (err) {
+                console.error("Error deleting log:", err);
+                logsData = logsData.filter(l => l.id !== logId);
+                saveLocalData();
+                updateUIAll();
             }
         };
 
@@ -1056,12 +1387,16 @@
             }
         };
 
-        window.toggleWaterTask = async function(plantId) {
+        window.toggleWaterTask = async function(plantId, event) {
             const todayStr = new Date().toISOString().split('T')[0];
             const plant = plantsData.find(p => p.id === plantId);
             if (!plant) return;
 
             const newDate = plant.lastWatered === todayStr ? '' : todayStr;
+
+            if (event && event.currentTarget && newDate) {
+                triggerWaterEffect(event.currentTarget);
+            }
 
             try {
                 if (db && currentUser) {
@@ -1071,7 +1406,7 @@
                     plant.lastWatered = newDate;
                     updateUIAll();
                 }
-                showToast(newDate ? '水やりを記録しました' : '水やり記録を取り消しました');
+                showToast(newDate ? '💧 水やりを記録しました！' : '水やり記録を取り消しました');
             } catch (err) {
                 console.error("Error updating water task:", err);
             }
@@ -1111,13 +1446,19 @@
         };
 
         window.switchTab = function(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('animate-fade-in');
+            });
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('border-brand-600', 'text-brand-600', 'font-semibold');
                 btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
             });
 
-            document.getElementById('content-' + tabName).classList.remove('hidden');
+            const targetContent = document.getElementById('content-' + tabName);
+            targetContent.classList.remove('hidden');
+            targetContent.classList.add('animate-fade-in');
+
             const activeBtn = document.getElementById('tab-' + tabName);
             activeBtn.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
             activeBtn.classList.add('border-brand-600', 'text-brand-600', 'font-semibold');
@@ -1128,7 +1469,8 @@
         };
 
         window.openModal = function(id) {
-            document.getElementById(id).classList.remove('hidden');
+            const modal = document.getElementById(id);
+            modal.classList.remove('hidden');
             if (id === 'addLogModal') {
                 document.getElementById('inputLogDate').value = new Date().toISOString().split('T')[0];
             } else if (id === 'addPlantModal') {
@@ -1143,16 +1485,16 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = `p-3 rounded-xl shadow-lg text-xs font-bold text-white flex items-center space-x-2 pointer-events-auto transition-all transform translate-y-2 opacity-0 ${type === 'success' ? 'bg-brand-700' : 'bg-rose-600'}`;
-            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i><span>${message}</span>`;
+            toast.className = `p-3.5 rounded-xl shadow-xl text-xs font-bold text-white flex items-center space-x-2 pointer-events-auto transition-all duration-300 transform translate-y-3 opacity-0 ${type === 'success' ? 'bg-brand-700 shadow-brand-700/20' : 'bg-rose-600 shadow-rose-600/20'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check animate-bounce' : 'fa-circle-exclamation'}"></i><span>${message}</span>`;
             container.appendChild(toast);
 
             setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
+                toast.classList.remove('translate-y-3', 'opacity-0');
             }, 10);
 
             setTimeout(() => {
-                toast.classList.add('opacity-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
